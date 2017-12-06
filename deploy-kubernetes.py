@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 from ssh_paramiko import RemoteServer
 import time
 
@@ -17,6 +18,7 @@ class UnableToConnectException(Exception):
 class KubernetesDeployer:
     def __init__(self):
         self.client = None
+        self.save_dir = "/tmp"
 
     def _get_first_token(self, text):
         if len(text.split()) > 0:
@@ -160,8 +162,11 @@ class KubernetesDeployer:
         if connected == False:
             raise UnableToConnectException(ipaddr)
 
-        ssh.get_file('/tmp/admin.conf', '/etc/kubernetes/admin.conf')
-        ssh.get_file('/tmp/join-command', '/tmp/join-command')
+        files = ['/etc/kubernetes/admin.conf', '/tmp/join-command']
+        for filename in files:
+            basename=os.path.basename(filename)
+            target='{}/{}'.format(self.save_dir, basename)
+            ssh.get_file(target, filename)
 
         ssh.close_connection()
 
