@@ -22,7 +22,7 @@ class KubernetesDeployer:
 
     def _get_first_token(self, text):
         if len(text.split()) > 0:
-	    return(text.split()[0])
+            return(text.split()[0])
         return None
 
     def setup_arguments(self):
@@ -39,9 +39,9 @@ class KubernetesDeployer:
         # return the parser object
         return parser
 
-    def node_execute_command(self, ipaddr, username, password, command, numTries=5):
+    def connect_to_host(self, ipaddr, username, password, numTries=5):
         """
-        Execute a command via ssh
+        Connect to a host
         """
         attempt=1
         connected = False
@@ -61,6 +61,14 @@ class KubernetesDeployer:
 
         if connected == False:
             raise UnableToConnectException(ipaddr)
+
+        return ssh
+
+    def node_execute_command(self, ipaddr, username, password, command, numTries=5):
+        """
+        Execute a command via ssh
+        """
+        ssh = self.connect_to_host(ipaddr, username, password, numTries)
 
         print("Executing Command: %s" % (command))
         rc, stdout, stderr = ssh.execute_cmd(command, timeout=None)
@@ -142,25 +150,7 @@ class KubernetesDeployer:
         Copy some files to save directory
 
         """
-        attempt = 1
-        connected = False
-        numTries = 5
-
-        ssh = RemoteServer(None,
-                           username=args.USERNAME,
-                           password=args.PASSWORD,
-                           log_folder_path='/tmp',
-                           server_has_dns=False)
-        while (attempt <= numTries and connected == False):
-            print("Connecting to: %s" % (ipaddr))
-
-            connected, err = ssh.connect_server(ipaddr, False)
-            if connected == False:
-                time.sleep(5)
-                attempt = attempt + 1
-
-        if connected == False:
-            raise UnableToConnectException(ipaddr)
+        ssh = self.connect_to_host(ipaddr, args.USERNAME, args.PASSWORD)
 
         files = ['/etc/kubernetes/admin.conf', '/tmp/join-command']
         for filename in files:
