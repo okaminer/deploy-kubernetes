@@ -135,6 +135,36 @@ class KubernetesDeployer:
             _commands.append('bash /tmp/join-command')
             self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
 
+    def save_files(self, ipaddr, args):
+        """
+        Copy some files to save directory
+
+        """
+        attempt = 1
+        connected = False
+        numTries = 5
+
+        ssh = RemoteServer(None,
+                           username=args.USERNAME,
+                           password=args.PASSWORD,
+                           log_folder_path='/tmp',
+                           server_has_dns=False)
+        while (attempt <= numTries and connected == False):
+            print("Connecting to: %s" % (ipaddr))
+
+            connected, err = ssh.connect_server(ipaddr, False)
+            if connected == False:
+                time.sleep(5)
+                attempt = attempt + 1
+
+        if connected == False:
+            raise UnableToConnectException(ipaddr)
+
+        ssh.get_file('/tmp/admin.conf', '/etc/kubernetes/admin.conf')
+        ssh.get_file('/tmp/join-command', '/tmp/join-command')
+
+        ssh.close_connection()
+
     def process(self):
         """
         Main logic
@@ -146,6 +176,7 @@ class KubernetesDeployer:
         self.setup_master(args.IP[0], args)
         for ip in args.IP:
             self.setup_node(ip, args)
+        self.save_files(args.IP[0], args)
 
 
 # Start program
