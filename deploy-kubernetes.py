@@ -114,14 +114,6 @@ class KubernetesDeployer:
         _commands = []
         _commands.append("yum install -y docker")
         _commands.append("systemctl enable docker && systemctl start docker")
-        """
-        _commands.append("echo '[kubernetes]' > /etc/yum.repos.d/kubernetes.repo")
-        _commands.append("echo 'baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64' >> /etc/yum.repos.d/kubernetes.repo")
-        _commands.append("echo 'enabled=1' >> /etc/yum.repos.d/kubernetes.repo")
-        _commands.append("echo 'gpgcheck=1' >> /etc/yum.repos.d/kubernetes.repo")
-        _commands.append("echo 'repo_gpgcheck=1' >> /etc/yum.repos.d/kubernetes.repo")
-        _commands.append("echo 'gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg' >> /etc/yum.repos.d/kubernetes.repo")
-        """
         _commands.append("setenforce 0")
         _commands.append("yum install -y kubelet kubeadm kubectl")
         _commands.append("systemctl enable kubelet && systemctl start kubelet")
@@ -145,7 +137,7 @@ class KubernetesDeployer:
         for ip in args.IP:
             _commands.append('scp /tmp/join-temp {}:/tmp/join-command'.format(ip))
         _commands.append('sysctl net.bridge.bridge-nf-call-iptables=1')
-        _commands.append("KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml")
+        _commands.append("kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml")
         _commands.append('if [ ! -d ~/.kube ]; then mkdir ~/.kube; fi')
         _commands.append('if [ ! -f ~/.kube/config ]; then cp /etc/kubernetes/admin.conf ~/.kube/config; fi ')
 
