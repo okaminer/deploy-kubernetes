@@ -19,6 +19,7 @@ class KubernetesDeployer:
     def __init__(self):
         self.client = None
         self.save_dir = "/tmp"
+        self.args = None
 
     def _get_first_token(self, text):
         if len(text.split()) > 0:
@@ -159,7 +160,7 @@ class KubernetesDeployer:
             _commands.append('bash /tmp/join-command')
             self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
 
-    def install_helm(self, ipaddr, args):
+    def install_helm(self, ipaddr):
         """
         Prepare a cluster to run helm/tiller
 
@@ -173,16 +174,16 @@ class KubernetesDeployer:
         _commands.append('kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:default')
         _commands.append('helm init && helm repo update')
 
-        self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
+        self.node_execute_multiple(ipaddr, self.args.USERNAME, self.args.PASSWORD, _commands)
 
-    def save_files(self, ipaddr, args):
+    def save_files(self, ipaddr):
         """
         Copy some files to save directory
 
         """
 
         self.show_step('Saving files')
-        ssh = self.connect_to_host(ipaddr, args.USERNAME, args.PASSWORD)
+        ssh = self.connect_to_host(ipaddr, self.args.USERNAME, self.args.PASSWORD)
 
         files = ['/etc/kubernetes/admin.conf', '/tmp/join-command']
         for filename in files:
@@ -197,14 +198,14 @@ class KubernetesDeployer:
         Main logic
         """
         parser = self.setup_arguments()
-        args = parser.parse_args()
+        self.args = parser.parse_args()
 
-        self.setup_all_nodes(args)
-        self.setup_master(args.IP[0], args)
-        for ip in args.IP:
-            self.setup_node(ip, args)
-        self.install_helm(args.IP[0], args)
-        self.save_files(args.IP[0], args)
+        self.setup_all_nodes(self.args)
+        self.setup_master(args.IP[0], self.args)
+        for ip in self.args.IP:
+            self.setup_node(ip, self.args)
+        self.install_helm(args.IP[0])
+        self.save_files(args.IP[0])
 
 
 # Start program
