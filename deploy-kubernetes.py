@@ -21,6 +21,7 @@ class KubernetesDeployer:
         self.client = None
         self.save_dir = "/tmp"
         self.args = None
+        self.master_node = None
 
     def _get_first_token(self, text):
         if len(text.split()) > 0:
@@ -105,7 +106,7 @@ class KubernetesDeployer:
             if rc is False:
                 print("error running: [%s] %s" % (ipaddr, cmd))
 
-    def setup_all_nodes(self, args):
+    def setup_all_nodes(self):
         """
         Prepare all the nodes
 
@@ -119,11 +120,11 @@ class KubernetesDeployer:
         _commands.append("systemctl enable kubelet && systemctl start kubelet")
         _commands.append("swapoff -a")
 
-        for ipaddr in args.IP:
+        for ipaddr in self.args.IP:
             self.put_files(ipaddr)
             self.node_execute_multiple(ipaddr, _commands)
 
-    def setup_master(self, ipaddr, args):
+    def setup_master(self, ipaddr):
         """
         Prepare a host to run k8s master
 
@@ -134,17 +135,16 @@ class KubernetesDeployer:
         _commands = []
         _commands.append('kubeadm init --pod-network-cidr=10.244.0.0/16 | tee /tmp/kubeinit-temp')
         _commands.append('grep "kubeadm join --token" /tmp/kubeinit-temp > /tmp/join-temp')
-        for ip in args.IP:
+        for ip in self.args.IP:
             _commands.append('scp /tmp/join-temp {}:/tmp/join-command'.format(ip))
         _commands.append('if [ ! -d ~/.kube ]; then mkdir ~/.kube; fi')
         _commands.append('if [ ! -f ~/.kube/config ]; then cp /etc/kubernetes/admin.conf ~/.kube/config; fi ')
         _commands.append('sysctl net.bridge.bridge-nf-call-iptables=1')
         _commands.append("kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml")
 
-
         self.node_execute_multiple(ipaddr, _commands)
 
-    def setup_node(self, ipaddr, args):
+    def setup_node(self, ipaddr):
         """
         Prepare a host to run k8s node
 
@@ -152,7 +152,7 @@ class KubernetesDeployer:
         """
 
         self.show_step('"Setting up node: '.format(ipaddr))
-        if ipaddr != args.IP[0]:
+        if ipaddr != self.master_node:
             _commands = []
             _commands.append('bash /tmp/join-command')
             self.node_execute_multiple(ipaddr, _commands)
@@ -211,12 +211,14 @@ class KubernetesDeployer:
         parser = self.setup_arguments()
         self.args = parser.parse_args()
 
-        self.setup_all_nodes(self.args)
-        self.setup_master(self.args.IP[0], self.args)
+        self.master_node = self.args.IP[0]
+
+        self.setup_all_nodes()
+        self.setup_master(self.master_node)
         for ip in self.args.IP:
-            self.setup_node(ip, self.args)
-        self.install_helm(self.args.IP[0])
-        self.get_files(self.args.IP[0])
+            self.setup_node(ip)
+        self.install_helm(self.master_node)
+        self.get_files(self.master_node)
 
 
 # Start program
