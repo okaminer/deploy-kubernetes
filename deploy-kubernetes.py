@@ -136,10 +136,11 @@ class KubernetesDeployer:
         _commands.append('grep "kubeadm join --token" /tmp/kubeinit-temp > /tmp/join-temp')
         for ip in args.IP:
             _commands.append('scp /tmp/join-temp {}:/tmp/join-command'.format(ip))
-        _commands.append('sysctl net.bridge.bridge-nf-call-iptables=1')
-        _commands.append("kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml")
         _commands.append('if [ ! -d ~/.kube ]; then mkdir ~/.kube; fi')
         _commands.append('if [ ! -f ~/.kube/config ]; then cp /etc/kubernetes/admin.conf ~/.kube/config; fi ')
+        _commands.append('sysctl net.bridge.bridge-nf-call-iptables=1')
+        _commands.append("kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml")
+
 
         self.node_execute_multiple(ipaddr, _commands)
 
