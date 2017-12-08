@@ -3,6 +3,7 @@
 import argparse
 import os
 from ssh_paramiko import RemoteServer
+import sys
 import time
 
 class UnableToConnectException(Exception):
@@ -45,9 +46,11 @@ class KubernetesDeployer:
         Simple function to print the step we are working on
         """
 
+        sys.stdout.flush()
         print("******************************************************")
         print("* {}".format(step))
         print("******************************************************")
+        sys.stdout.flush()
         return None
 
     def connect_to_host(self, ipaddr, numTries=5):
@@ -111,20 +114,21 @@ class KubernetesDeployer:
         _commands = []
         _commands.append("yum install -y docker")
         _commands.append("systemctl enable docker && systemctl start docker")
-
+        """
         _commands.append("echo '[kubernetes]' > /etc/yum.repos.d/kubernetes.repo")
         _commands.append("echo 'baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64' >> /etc/yum.repos.d/kubernetes.repo")
         _commands.append("echo 'enabled=1' >> /etc/yum.repos.d/kubernetes.repo")
         _commands.append("echo 'gpgcheck=1' >> /etc/yum.repos.d/kubernetes.repo")
         _commands.append("echo 'repo_gpgcheck=1' >> /etc/yum.repos.d/kubernetes.repo")
         _commands.append("echo 'gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg' >> /etc/yum.repos.d/kubernetes.repo")
-
+        """
         _commands.append("setenforce 0")
         _commands.append("yum install -y kubelet kubeadm kubectl")
         _commands.append("systemctl enable kubelet && systemctl start kubelet")
         _commands.append("swapoff -a")
 
         for ipaddr in args.IP:
+            self.put_files(ipaddr)
             self.node_execute_multiple(ipaddr, _commands)
 
     def setup_master(self, ipaddr, args):
@@ -176,13 +180,26 @@ class KubernetesDeployer:
 
         self.node_execute_multiple(ipaddr, _commands)
 
-    def save_files(self, ipaddr):
+
+    def put_files(self, ipaddr):
         """
         Copy some files to save directory
 
         """
 
-        self.show_step('Saving files')
+        self.show_step('Putting files')
+        ssh = self.connect_to_host(ipaddr)
+
+        ssh.put_file('kubernetes.repo', "/etc/yum.repos.d/kubernetes.repo")
+        ssh.close_connection()
+
+    def get_files(self, ipaddr):
+        """
+        Copy some files to save directory
+
+        """
+
+        self.show_step('Getting files')
         ssh = self.connect_to_host(ipaddr)
 
         files = ['/etc/kubernetes/admin.conf', '/tmp/join-command']
@@ -205,7 +222,7 @@ class KubernetesDeployer:
         for ip in self.args.IP:
             self.setup_node(ip, self.args)
         self.install_helm(self.args.IP[0])
-        self.save_files(self.args.IP[0])
+        self.get_files(self.args.IP[0])
 
 
 # Start program

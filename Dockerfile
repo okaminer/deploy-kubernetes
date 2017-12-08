@@ -9,10 +9,8 @@ ENTRYPOINT ["python","/app/deploy-kubernetes.py"]
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 # define the pyhton requirements and install them
-ADD requirements.txt $APPDIR/
+ADD * $APPDIR/
 RUN cd $APPDIR && pip install -r requirements.txt
-# add the python modules
-ADD *.py $APPDIR/
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
