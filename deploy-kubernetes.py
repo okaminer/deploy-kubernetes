@@ -190,7 +190,7 @@ class KubernetesDeployer:
         self.show_step('Putting files')
         ssh = self.connect_to_host(ipaddr)
 
-        ssh.put_file('/app/kubernetes.repo', "/etc/yum.repos.d/kubernetes.repo")
+        ssh.put_file('{}/kubernetes.repo'.format(sys.argv[0]), "/etc/yum.repos.d/kubernetes.repo")
         ssh.close_connection()
 
     def get_files(self, ipaddr):
