@@ -45,7 +45,7 @@ class KubernetesDeployer:
         """
 
         print("******************************************************")
-        print("*", step)
+        print("* {}".format(step))
         print("******************************************************")
         return None
 
@@ -159,7 +159,7 @@ class KubernetesDeployer:
             _commands.append('bash /tmp/join-command')
             self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
 
-    def install_helm(self, ipaddr):
+    def install_helm(self, ipaddr, args):
         """
         Prepare a cluster to run helm/tiller
 
@@ -203,7 +203,7 @@ class KubernetesDeployer:
         self.setup_master(args.IP[0], args)
         for ip in args.IP:
             self.setup_node(ip, args)
-        self.install_helm(args.IP[0])
+        self.install_helm(args.IP[0], args)
         self.save_files(args.IP[0], args)
 
 
