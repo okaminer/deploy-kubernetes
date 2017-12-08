@@ -130,6 +130,8 @@ class KubernetesDeployer:
             _commands.append('scp /tmp/join-temp {}:/tmp/join-command'.format(ip))
         _commands.append('sysctl net.bridge.bridge-nf-call-iptables=1')
         _commands.append("KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml")
+        _commands.append('mkdir ~/.kube')
+        _commands.append('cp /etc/kubernetes/admin.conf ~/.kube/config')
 
         self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
 
@@ -144,6 +146,20 @@ class KubernetesDeployer:
             _commands = []
             _commands.append('bash /tmp/join-command')
             self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
+
+    def install_helm(self, ipaddr):
+        """
+        Prepare a cluster to run helm/tiller
+
+        """
+        helm_installer='https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get'
+        _commands = []
+        _commands.append('yum install -y wget')
+        _commands.append('wget {} -O helm_installer && bash ./helm_installer'.format(helm_installer))
+        _commands.append('kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:default')
+        _commands.append('helm init && helm repo update')
+
+        self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
 
     def save_files(self, ipaddr, args):
         """
@@ -171,6 +187,7 @@ class KubernetesDeployer:
         self.setup_master(args.IP[0], args)
         for ip in args.IP:
             self.setup_node(ip, args)
+        self.install_helm(args.IP[0])
         self.save_files(args.IP[0], args)
 
 
