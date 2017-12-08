@@ -183,14 +183,15 @@ class KubernetesDeployer:
 
     def put_files(self, ipaddr):
         """
-        Copy some files to save directory
+        put some files to the node
 
         """
 
         self.show_step('Putting files')
         ssh = self.connect_to_host(ipaddr)
 
-        ssh.put_file('{}/kubernetes.repo'.format(sys.argv[0]), "/etc/yum.repos.d/kubernetes.repo")
+        ssh.put_file('{}/kubernetes.repo'.format(os.path.dirname(os.path.realpath(sys.argv[0]))),
+                     '/etc/yum.repos.d/kubernetes.repo')
         ssh.close_connection()
 
     def get_files(self, ipaddr):
