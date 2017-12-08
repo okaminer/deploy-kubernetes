@@ -39,6 +39,16 @@ class KubernetesDeployer:
         # return the parser object
         return parser
 
+    def show_step(self, step):
+        """
+        Simple function to print the step we are working on
+        """
+
+        print("******************************************************")
+        print("*", step)
+        print("******************************************************")
+        return None
+
     def connect_to_host(self, ipaddr, username, password, numTries=5):
         """
         Connect to a host
@@ -123,6 +133,7 @@ class KubernetesDeployer:
         This includes installing some pre-reqs
         """
 
+        self.show_step('Setting up the Master: '.format(ipaddr))
         _commands = []
         _commands.append('kubeadm init --pod-network-cidr=10.244.0.0/16 | tee /tmp/kubeinit-temp')
         _commands.append('grep "kubeadm join --token" /tmp/kubeinit-temp > /tmp/join-temp')
@@ -142,6 +153,7 @@ class KubernetesDeployer:
         This includes installing some pre-reqs
         """
 
+        self.show_step('"Setting up node: '.format(ipaddr))
         if ipaddr != args.IP[0]:
             _commands = []
             _commands.append('bash /tmp/join-command')
@@ -152,6 +164,8 @@ class KubernetesDeployer:
         Prepare a cluster to run helm/tiller
 
         """
+
+        self.show_step('Setting up helm and tiller')
         helm_installer='https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get'
         _commands = []
         _commands.append('yum install -y wget')
@@ -166,6 +180,8 @@ class KubernetesDeployer:
         Copy some files to save directory
 
         """
+
+        self.show_step('Saving files')
         ssh = self.connect_to_host(ipaddr, args.USERNAME, args.PASSWORD)
 
         files = ['/etc/kubernetes/admin.conf', '/tmp/join-command']
