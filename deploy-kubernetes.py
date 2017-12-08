@@ -50,7 +50,7 @@ class KubernetesDeployer:
         print("******************************************************")
         return None
 
-    def connect_to_host(self, ipaddr, username, password, numTries=5):
+    def connect_to_host(self, ipaddr, numTries=5):
         """
         Connect to a host
         """
@@ -58,8 +58,8 @@ class KubernetesDeployer:
         connected = False
 
         ssh = RemoteServer(None,
-                           username=username,
-                           password=password,
+                           username=self.args.USERNAME,
+                           password=self.args.PASSWORD,
                            log_folder_path='/tmp',
                            server_has_dns=False)
         while (attempt<=numTries and connected==False):
@@ -75,11 +75,11 @@ class KubernetesDeployer:
 
         return ssh
 
-    def node_execute_command(self, ipaddr, username, password, command, numTries=5):
+    def node_execute_command(self, ipaddr, command, numTries=5):
         """
         Execute a command via ssh
         """
-        ssh = self.connect_to_host(ipaddr, username, password, numTries)
+        ssh = self.connect_to_host(ipaddr, numTries)
 
         print("Executing Command: %s" % (command))
         rc, stdout, stderr = ssh.execute_cmd(command, timeout=None)
@@ -93,12 +93,12 @@ class KubernetesDeployer:
 
         return rc, stdout, stderr
 
-    def node_execute_multiple(self, ipaddr, username, password, commands):
+    def node_execute_multiple(self, ipaddr, commands):
         """
         execute a list of commands
         """
         for cmd in commands:
-            rc, output, error = self.node_execute_command(ipaddr, username, password, cmd)
+            rc, output, error = self.node_execute_command(ipaddr,  cmd)
             if rc is False:
                 print("error running: [%s] %s" % (ipaddr, cmd))
 
@@ -125,7 +125,7 @@ class KubernetesDeployer:
         _commands.append("swapoff -a")
 
         for ipaddr in args.IP:
-            self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
+            self.node_execute_multiple(ipaddr, _commands)
 
     def setup_master(self, ipaddr, args):
         """
@@ -145,7 +145,7 @@ class KubernetesDeployer:
         _commands.append('if [ ! -d ~/.kube ]; then mkdir ~/.kube; fi')
         _commands.append('if [ ! -f ~/.kube/config ]; then cp /etc/kubernetes/admin.conf ~/.kube/config; fi ')
 
-        self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
+        self.node_execute_multiple(ipaddr, _commands)
 
     def setup_node(self, ipaddr, args):
         """
@@ -158,7 +158,7 @@ class KubernetesDeployer:
         if ipaddr != args.IP[0]:
             _commands = []
             _commands.append('bash /tmp/join-command')
-            self.node_execute_multiple(ipaddr, args.USERNAME, args.PASSWORD, _commands)
+            self.node_execute_multiple(ipaddr, _commands)
 
     def install_helm(self, ipaddr):
         """
@@ -174,7 +174,7 @@ class KubernetesDeployer:
         _commands.append('kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:default')
         _commands.append('helm init && helm repo update')
 
-        self.node_execute_multiple(ipaddr, self.args.USERNAME, self.args.PASSWORD, _commands)
+        self.node_execute_multiple(ipaddr, _commands)
 
     def save_files(self, ipaddr):
         """
@@ -183,7 +183,7 @@ class KubernetesDeployer:
         """
 
         self.show_step('Saving files')
-        ssh = self.connect_to_host(ipaddr, self.args.USERNAME, self.args.PASSWORD)
+        ssh = self.connect_to_host(ipaddr)
 
         files = ['/etc/kubernetes/admin.conf', '/tmp/join-command']
         for filename in files:
@@ -201,11 +201,11 @@ class KubernetesDeployer:
         self.args = parser.parse_args()
 
         self.setup_all_nodes(self.args)
-        self.setup_master(args.IP[0], self.args)
+        self.setup_master(self.args.IP[0], self.args)
         for ip in self.args.IP:
             self.setup_node(ip, self.args)
-        self.install_helm(args.IP[0])
-        self.save_files(args.IP[0])
+        self.install_helm(self.args.IP[0])
+        self.save_files(self.args.IP[0])
 
 
 # Start program
