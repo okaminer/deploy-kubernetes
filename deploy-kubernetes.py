@@ -217,7 +217,7 @@ class KubernetesDeployer:
         self.setup_master(self.master_node)
         for ip in self.args.IP:
             self.setup_node(ip)
-        self.install_helm(self.master_node)
+        # self.install_helm(self.master_node)
         self.get_files(self.master_node)
 
 
